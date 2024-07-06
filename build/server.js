@@ -19,8 +19,8 @@ mongoose_1.default.connect(process.env.MONGO_URL).then(() => {
 app.use(body_parser_1.default.json());
 app.use(body_parser_1.default.urlencoded({ extended: true }));
 app.use((0, cookie_parser_1.default)());
-app.use("/posts", posts_1.default);
-app.use("/user", users_1.default);
+app.use("/api/posts", posts_1.default);
+app.use("/api/user", users_1.default);
 app.use((error, req, res, next) => {
     if (req.headerSent) {
         next(error);

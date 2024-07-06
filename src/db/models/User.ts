@@ -14,19 +14,17 @@ const UserSchema = new mongoose.Schema(
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
     profileImg: { type: String },
     bio: { type: String },
-    refreshToken: { type: String},
+    refreshToken: { type: String },
   },
   { timestamps: true }
 );
 
-UserSchema.pre("save", async function (next) {
-  if (this.isModified("password")) return next();
 
-  this.password = await bcrypt.hash(this.password, 10);
-});
+
 
 UserSchema.methods.isPasswordCorrect = async function (password: string) {
-  return bcrypt.compare(password, this.password);
+  const result = await bcrypt.compare(password, this.password);
+  return result;
 };
 
 UserSchema.methods.generateAccessToken = async function () {

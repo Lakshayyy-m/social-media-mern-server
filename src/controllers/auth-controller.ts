@@ -1,9 +1,10 @@
 import dotenv from "dotenv";
 dotenv.config();
-import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import { Request, Response } from "express";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { userSchema } from "../utils/validation";
 import { User } from "../db/models/User";
+import bcrypt from "bcrypt";
 
 export const loginUser = async (req: Request, res: Response) => {
   const data = req.body;
@@ -11,7 +12,6 @@ export const loginUser = async (req: Request, res: Response) => {
   //data validated
   const result = userSchema.safeParse(data);
   if (!result.success) {
-    console.log(data);
     return res.status(403).json({ message: result.error.issues[0].message }); //!error 403 for invalid data
   }
 
@@ -43,8 +43,8 @@ export const loginUser = async (req: Request, res: Response) => {
     await user.save({ validateBeforeSave: false });
 
     const loggedInUser = user;
-    delete loggedInUser.refreshToken;
-    delete loggedInUser.password;
+    loggedInUser.refreshToken = undefined;
+    loggedInUser.password = undefined;
 
     const options = {
       httpOnly: true,
@@ -102,10 +102,32 @@ export const signUpUser = async (req: Request, res: Response) => {
   const data = req.body;
 
   //data validation
+  if (!data.username || !data.email || !data.fullname) {
+    return res
+      .status(403)
+      .json({ message: "All username, Full name and email are needed" });
+  }
   const result = userSchema.safeParse(data);
   if (!result.success) {
-    console.log(data);
     return res.status(403).json({ message: result.error.issues[0].message }); //!error 403 for invalid data
+  }
+
+  try {
+    //checking for email existence
+    const user = await User.findOne({ email: data.email });
+
+    if (user && user?.username !== data.username) {
+      return res.status(401).json({ message: "E-mail already exists" });
+    }
+
+    //checking for username existance
+    const user2 = await User.findOne({ username: data.username });
+    if (user2 && user2?.email !== data.email) {
+      return res.status(401).json({ message: "Username already exists" });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(409).json({ message: "Some error has occured" });
   }
 
   try {
@@ -116,11 +138,15 @@ export const signUpUser = async (req: Request, res: Response) => {
     //checking for user existence
     if (!user) {
       //implement signup
+      const safePassword = await bcrypt.hash(data.password, 10);
       const newUser = await User.create({
         name: data.fullname,
         username: data.username,
         email: data.email,
-        password: data.password,
+        password: safePassword,
+        bio: "",
+        profileImg: "",
+        
       });
       const accessToken = await newUser.generateAccessToken();
       const refreshToken = await newUser.generateRefreshToken();
@@ -132,11 +158,19 @@ export const signUpUser = async (req: Request, res: Response) => {
         secure: true,
       };
 
+      newUser.refreshToken = undefined;
+      newUser.password = undefined;
+
       return res
         .status(200)
         .cookie("accessToken", accessToken, options)
         .cookie("refreshToken", refreshToken, options)
-        .json({ message: "User successfully created" });
+        .json({
+          message: "User successfully created",
+          user: newUser,
+          accessToken,
+          refreshToken,
+        });
       //!also implmement redirect of user
     } else {
       //implement login
@@ -156,8 +190,8 @@ export const signUpUser = async (req: Request, res: Response) => {
       await user.save({ validateBeforeSave: false });
 
       const loggedInUser = user;
-      delete loggedInUser.refreshToken;
-      delete loggedInUser.password;
+      loggedInUser.refreshToken = undefined;
+      loggedInUser.password = undefined;
 
       const options = {
         httpOnly: true,
@@ -171,7 +205,7 @@ export const signUpUser = async (req: Request, res: Response) => {
         .cookie("accessToken", accessToken, options)
         .cookie("refreshToken", refreshToken, options)
         .json({
-          message: "User successfuly created",
+          message: "User successfuly logged in",
           user: loggedInUser,
           accessToken,
           refreshToken,
@@ -183,6 +217,72 @@ export const signUpUser = async (req: Request, res: Response) => {
   }
 };
 
-export const refreshUser = (req: Request, res: Response) => {
-  
+export const refreshUser = async (req: Request, res: Response) => {
+  const incomingToken = req.cookies.refreshToken || req.body.refreshToken;
+
+  if (!incomingToken) {
+    return res.status(401).json({ message: "Unauthorized Request" });
+  }
+
+  let decodedToken;
+  try {
+    decodedToken = jwt.verify(
+      incomingToken,
+      process.env.TOKEN_SECRET!
+    ) as JwtPayload;
+  } catch (error: any) {
+    console.log(error);
+    if (error.name === "TokenExpiredError") {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized Access, Kindly Re-login" }); //Even refresh token not valid anymore
+    }
+  }
+
+  try {
+    const user = await User.findById(decodedToken!._id);
+    if (!user) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized Request, Invalid Token" });
+    }
+
+    if (incomingToken !== user.refreshToken) {
+      return res.status(401).json({ message: "Refresh Token expired" });
+    }
+
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    const loggedInUser = user;
+    delete loggedInUser.refreshToken;
+    delete loggedInUser.password;
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json({
+        message: "User successfuly logged in",
+        user: loggedInUser,
+        accessToken,
+        refreshToken,
+      });
+  } catch (error) {
+    console.log(error);
+    return res.status(404).json({ message: "Some error occured" });
+  }
+};
+
+//for checking authentication on mounting of application
+export const checkAuth = (req: Request, res: Response) => {
+  return res.status(200).json({ status: true, user: (req as any).user });
 };

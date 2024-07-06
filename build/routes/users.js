@@ -9,6 +9,8 @@ const auth_middleware_1 = require("../middlewares/auth.middleware");
 const router = express_1.default.Router();
 router.post("/login", auth_controller_1.loginUser);
 router.post("/signup", auth_controller_1.signUpUser);
+router.post("/refreshToken", auth_controller_1.refreshUser);
 //secured routes
 router.post("/logout", auth_middleware_1.verifyJWT, auth_controller_1.logoutUser);
+router.post("/checkAuth", auth_middleware_1.verifyJWT, auth_controller_1.checkAuth);
 exports.default = router;

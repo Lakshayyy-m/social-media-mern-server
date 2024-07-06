@@ -30,16 +30,10 @@ const UserSchema = new mongoose_1.default.Schema({
     bio: { type: String },
     refreshToken: { type: String },
 }, { timestamps: true });
-UserSchema.pre("save", function (next) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (this.isModified("password"))
-            return next();
-        this.password = yield bcrypt_1.default.hash(this.password, 10);
-    });
-});
 UserSchema.methods.isPasswordCorrect = function (password) {
     return __awaiter(this, void 0, void 0, function* () {
-        return bcrypt_1.default.compare(password, this.password);
+        const result = yield bcrypt_1.default.compare(password, this.password);
+        return result;
     });
 };
 UserSchema.methods.generateAccessToken = function () {

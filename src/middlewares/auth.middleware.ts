@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { User } from "../db/models/User";
-import { any } from "zod";
 
 type jwtPayload = {
   _id: string;
@@ -27,6 +26,9 @@ export const verifyJWT = async (
   } catch (error: any) {
     console.log(error);
     if (error.name === "TokenExpiredError") {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized Access, Kindly Re-login" }); //Refresh token path from here
     }
   }
 

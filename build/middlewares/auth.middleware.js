@@ -29,6 +29,9 @@ const verifyJWT = (req, res, next) => __awaiter(void 0, void 0, void 0, function
     catch (error) {
         console.log(error);
         if (error.name === "TokenExpiredError") {
+            return res
+                .status(403)
+                .json({ message: "Unauthorized Access, Kindly Re-login" }); //Refresh token path from here
         }
     }
     //!If token is expired then refresh it.

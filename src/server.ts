@@ -19,9 +19,9 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-app.use("/posts", postRouter);
+app.use("/api/posts", postRouter);
 
-app.use("/user", userRouter);
+app.use("/api/user", userRouter);
 
 app.use((error: any, req: any, res: any, next: any) => {
   if (req.headerSent) {

@@ -12,17 +12,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.refreshUser = exports.signUpUser = exports.logoutUser = exports.loginUser = void 0;
+exports.checkAuth = exports.refreshUser = exports.signUpUser = exports.logoutUser = exports.loginUser = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const validation_1 = require("../utils/validation");
 const User_1 = require("../db/models/User");
+const bcrypt_1 = __importDefault(require("bcrypt"));
 const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const data = req.body;
     //data validated
     const result = validation_1.userSchema.safeParse(data);
     if (!result.success) {
-        console.log(data);
         return res.status(403).json({ message: result.error.issues[0].message }); //!error 403 for invalid data
     }
     try {
@@ -49,8 +50,8 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         user.refreshToken = refreshToken;
         yield user.save({ validateBeforeSave: false });
         const loggedInUser = user;
-        delete loggedInUser.refreshToken;
-        delete loggedInUser.password;
+        loggedInUser.refreshToken = undefined;
+        loggedInUser.password = undefined;
         const options = {
             httpOnly: true,
             secure: true,
@@ -101,10 +102,30 @@ exports.logoutUser = logoutUser;
 const signUpUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const data = req.body;
     //data validation
+    if (!data.username || !data.email || !data.fullname) {
+        return res
+            .status(403)
+            .json({ message: "All username, Full name and email are needed" });
+    }
     const result = validation_1.userSchema.safeParse(data);
     if (!result.success) {
-        console.log(data);
         return res.status(403).json({ message: result.error.issues[0].message }); //!error 403 for invalid data
+    }
+    try {
+        //checking for email existence
+        const user = yield User_1.User.findOne({ email: data.email });
+        if (user && (user === null || user === void 0 ? void 0 : user.username) !== data.username) {
+            return res.status(401).json({ message: "E-mail already exists" });
+        }
+        //checking for username existance
+        const user2 = yield User_1.User.findOne({ username: data.username });
+        if (user2 && (user2 === null || user2 === void 0 ? void 0 : user2.email) !== data.email) {
+            return res.status(401).json({ message: "Username already exists" });
+        }
+    }
+    catch (error) {
+        console.log(error);
+        return res.status(409).json({ message: "Some error has occured" });
     }
     try {
         const user = yield User_1.User.findOne({
@@ -114,11 +135,14 @@ const signUpUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         //checking for user existence
         if (!user) {
             //implement signup
+            const safePassword = yield bcrypt_1.default.hash(data.password, 10);
             const newUser = yield User_1.User.create({
                 name: data.fullname,
                 username: data.username,
                 email: data.email,
-                password: data.password,
+                password: safePassword,
+                bio: "",
+                profileImg: "",
             });
             const accessToken = yield newUser.generateAccessToken();
             const refreshToken = yield newUser.generateRefreshToken();
@@ -128,11 +152,18 @@ const signUpUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 httpOnly: true,
                 secure: true,
             };
+            newUser.refreshToken = undefined;
+            newUser.password = undefined;
             return res
                 .status(200)
                 .cookie("accessToken", accessToken, options)
                 .cookie("refreshToken", refreshToken, options)
-                .json({ message: "User successfully created" });
+                .json({
+                message: "User successfully created",
+                user: newUser,
+                accessToken,
+                refreshToken,
+            });
             //!also implmement redirect of user
         }
         else {
@@ -149,8 +180,8 @@ const signUpUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             user.refreshToken = refreshToken;
             yield user.save({ validateBeforeSave: false });
             const loggedInUser = user;
-            delete loggedInUser.refreshToken;
-            delete loggedInUser.password;
+            loggedInUser.refreshToken = undefined;
+            loggedInUser.password = undefined;
             const options = {
                 httpOnly: true,
                 secure: true,
@@ -161,7 +192,7 @@ const signUpUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 .cookie("accessToken", accessToken, options)
                 .cookie("refreshToken", refreshToken, options)
                 .json({
-                message: "User successfuly created",
+                message: "User successfuly logged in",
                 user: loggedInUser,
                 accessToken,
                 refreshToken,
@@ -174,6 +205,63 @@ const signUpUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 exports.signUpUser = signUpUser;
-const refreshUser = (req, res) => {
-};
+const refreshUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const incomingToken = req.cookies.refreshToken || req.body.refreshToken;
+    if (!incomingToken) {
+        return res.status(401).json({ message: "Unauthorized Request" });
+    }
+    let decodedToken;
+    try {
+        decodedToken = jsonwebtoken_1.default.verify(incomingToken, process.env.TOKEN_SECRET);
+    }
+    catch (error) {
+        console.log(error);
+        if (error.name === "TokenExpiredError") {
+            return res
+                .status(403)
+                .json({ message: "Unauthorized Access, Kindly Re-login" }); //Even refresh token not valid anymore
+        }
+    }
+    try {
+        const user = yield User_1.User.findById(decodedToken._id);
+        if (!user) {
+            return res
+                .status(401)
+                .json({ message: "Unauthorized Request, Invalid Token" });
+        }
+        if (incomingToken !== user.refreshToken) {
+            return res.status(401).json({ message: "Refresh Token expired" });
+        }
+        const accessToken = yield user.generateAccessToken();
+        const refreshToken = yield user.generateRefreshToken();
+        user.refreshToken = refreshToken;
+        yield user.save({ validateBeforeSave: false });
+        const loggedInUser = user;
+        delete loggedInUser.refreshToken;
+        delete loggedInUser.password;
+        const options = {
+            httpOnly: true,
+            secure: true,
+        };
+        return res
+            .status(200)
+            .cookie("accessToken", accessToken, options)
+            .cookie("refreshToken", refreshToken, options)
+            .json({
+            message: "User successfuly logged in",
+            user: loggedInUser,
+            accessToken,
+            refreshToken,
+        });
+    }
+    catch (error) {
+        console.log(error);
+        return res.status(404).json({ message: "Some error occured" });
+    }
+});
 exports.refreshUser = refreshUser;
+//for checking authentication on mounting of application
+const checkAuth = (req, res) => {
+    return res.status(200).json({ status: true, user: req.user });
+};
+exports.checkAuth = checkAuth;
