@@ -19,7 +19,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-app.use("/api/posts", postRouter);
+app.use("/api/post", postRouter);
 
 app.use("/api/user", userRouter);
 

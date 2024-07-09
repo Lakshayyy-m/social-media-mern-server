@@ -9,30 +9,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPostsByUserId = exports.createPost = void 0;
-const Post_1 = require("../db/models/Post");
-const createPost = (req, res) => {
-    const {} = req.body;
+exports.getUserById = void 0;
+const User_1 = require("../db/models/User");
+const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const newPost = Post_1.Post.create({});
-    }
-    catch (error) {
-        console.log(error);
-    }
-};
-exports.createPost = createPost;
-const getPostsByUserId = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const posts = yield Post_1.Post.find({ userId: req.params.id });
-        console.log(posts);
-        if (!posts) {
-            return res.status(200).json({ message: "No Posts", posts: [] });
+        const user = yield User_1.User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
         }
-        return res.status(200).json({ posts });
+        console.log("from getUserById", user);
+        return res.status(200).json({ user });
     }
     catch (error) {
         console.log(error);
-        return res.status(500).json({ message: "Error fetching posts" });
+        return res.status(500).json({ message: "Internal server error" });
     }
 });
-exports.getPostsByUserId = getPostsByUserId;
+exports.getUserById = getUserById;

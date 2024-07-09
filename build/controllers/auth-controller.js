@@ -54,7 +54,7 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         loggedInUser.password = undefined;
         const options = {
             httpOnly: true,
-            secure: true,
+            secure: false,
         };
         return res
             .status(200)
@@ -90,7 +90,7 @@ const logoutUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
     const options = {
         httpOnly: true,
-        secure: true,
+        secure: false,
     };
     return res
         .status(200)
@@ -150,7 +150,7 @@ const signUpUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             yield newUser.save();
             const options = {
                 httpOnly: true,
-                secure: true,
+                secure: false,
             };
             newUser.refreshToken = undefined;
             newUser.password = undefined;
@@ -184,7 +184,7 @@ const signUpUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             loggedInUser.password = undefined;
             const options = {
                 httpOnly: true,
-                secure: true,
+                secure: false,
             };
             //!recheck this ek baar
             return res
@@ -241,7 +241,7 @@ const refreshUser = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         delete loggedInUser.password;
         const options = {
             httpOnly: true,
-            secure: true,
+            secure: false,
         };
         return res
             .status(200)

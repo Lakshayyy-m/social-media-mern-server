@@ -7,12 +7,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Post = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const PostSchema = new mongoose_1.default.Schema({
-    uid: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "users" },
-    imgUrl: String,
+    userId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "users" },
+    imgUrl: [String],
     comments: [
         {
             commentId: String,
-            uid: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "users" },
+            userId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "users" },
             likesCount: Number,
             body: String,
         },

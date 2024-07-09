@@ -1,7 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
-import { createPost } from "../controllers/posts-controller";
+import { createPost, getPostsByUserId } from "../controllers/posts-controller";
+import { verifyJWT } from "../middlewares/auth.middleware";
 
 const router = express.Router();
 
@@ -9,6 +10,8 @@ router.get("/getAllPosts", (req, res) => {
   return res.json({ message: "posts page" });
 });
 
-router.get("/create-post", createPost);
+router.post("/create-post", verifyJWT, createPost);
+
+router.get("/getPostsByUserId/:id", verifyJWT, getPostsByUserId);
 
 export default router;

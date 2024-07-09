@@ -32,7 +32,6 @@ export const verifyJWT = async (
     }
   }
 
-  //!If token is expired then refresh it.
   try {
     const user = await User.findById(decodedToken!._id).select(
       "-password -refreshToken"

@@ -2,12 +2,12 @@ import mongoose from "mongoose";
 
 const PostSchema = new mongoose.Schema(
   {
-    uid: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
-    imgUrl: String,
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
+    imgUrl: [String],
     comments: [
       {
         commentId: String,
-        uid: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
         likesCount: Number,
         body: String,
       },

@@ -34,7 +34,6 @@ const verifyJWT = (req, res, next) => __awaiter(void 0, void 0, void 0, function
                 .json({ message: "Unauthorized Access, Kindly Re-login" }); //Refresh token path from here
         }
     }
-    //!If token is expired then refresh it.
     try {
         const user = yield User_1.User.findById(decodedToken._id).select("-password -refreshToken");
         if (!user) {

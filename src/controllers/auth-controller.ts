@@ -48,7 +48,7 @@ export const loginUser = async (req: Request, res: Response) => {
 
     const options = {
       httpOnly: true,
-      secure: true,
+      secure: false,
     };
 
     return res
@@ -88,7 +88,7 @@ export const logoutUser = async (req: Request, res: Response) => {
 
   const options = {
     httpOnly: true,
-    secure: true,
+    secure: false,
   };
 
   return res
@@ -155,7 +155,7 @@ export const signUpUser = async (req: Request, res: Response) => {
 
       const options = {
         httpOnly: true,
-        secure: true,
+        secure: false,
       };
 
       newUser.refreshToken = undefined;
@@ -195,7 +195,7 @@ export const signUpUser = async (req: Request, res: Response) => {
 
       const options = {
         httpOnly: true,
-        secure: true,
+        secure: false,
       };
 
       //!recheck this ek baar
@@ -263,7 +263,7 @@ export const refreshUser = async (req: Request, res: Response) => {
 
     const options = {
       httpOnly: true,
-      secure: true,
+      secure: false,
     };
 
     return res
