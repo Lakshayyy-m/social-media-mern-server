@@ -7,7 +7,10 @@ import {
   signUpUser,
 } from "../controllers/auth-controller";
 import { verifyJWT } from "../middlewares/auth.middleware";
-import { getUserById } from "../controllers/user-controller";
+import {
+  getUserById,
+  searchUserByUsernameOrName,
+} from "../controllers/user-controller";
 
 const router = express.Router();
 
@@ -21,5 +24,6 @@ router.post("/refreshToken", refreshUser);
 router.post("/logout", verifyJWT, logoutUser);
 router.post("/checkAuth", verifyJWT, checkAuth);
 router.get("/getUserWithId/:id", verifyJWT, getUserById);
+router.post("/searchUser/:value", verifyJWT, searchUserByUsernameOrName);
 
 export default router;

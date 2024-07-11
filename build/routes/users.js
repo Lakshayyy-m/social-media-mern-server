@@ -15,4 +15,5 @@ router.post("/refreshToken", auth_controller_1.refreshUser);
 router.post("/logout", auth_middleware_1.verifyJWT, auth_controller_1.logoutUser);
 router.post("/checkAuth", auth_middleware_1.verifyJWT, auth_controller_1.checkAuth);
 router.get("/getUserWithId/:id", auth_middleware_1.verifyJWT, user_controller_1.getUserById);
+router.post("/searchUser/:value", auth_middleware_1.verifyJWT, user_controller_1.searchUserByUsernameOrName);
 exports.default = router;

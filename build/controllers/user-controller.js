@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserById = void 0;
+exports.searchUserByUsernameOrName = exports.getUserById = void 0;
 const User_1 = require("../db/models/User");
 const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -26,3 +26,24 @@ const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.getUserById = getUserById;
+const searchUserByUsernameOrName = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { value } = req.params;
+    let users;
+    try {
+        users = yield User_1.User.aggregate().search({
+            index: "Search_Index",
+            text: {
+                query: value,
+                path: ["username", "name"],
+            },
+        });
+    }
+    catch (error) {
+        console.log(error);
+        return res
+            .status(500)
+            .json({ message: "Could not find users as of now. Try again later" });
+    }
+    return res.status(200).json({ users });
+});
+exports.searchUserByUsernameOrName = searchUserByUsernameOrName;

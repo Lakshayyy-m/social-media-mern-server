@@ -14,7 +14,6 @@ export const createPost = (req: Request, res: Response) => {
 export const getPostsByUserId = async (req: Request, res: Response) => {
   try {
     const posts = await Post.find({ userId: req.params.id });
-    console.log(posts);
     if (!posts) {
       return res.status(200).json({ message: "No Posts", posts: [] });
     }

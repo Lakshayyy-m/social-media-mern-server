@@ -24,7 +24,6 @@ exports.createPost = createPost;
 const getPostsByUserId = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const posts = yield Post_1.Post.find({ userId: req.params.id });
-        console.log(posts);
         if (!posts) {
             return res.status(200).json({ message: "No Posts", posts: [] });
         }
